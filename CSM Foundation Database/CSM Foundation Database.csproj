@@ -1,15 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>CSM_Foundation_Database</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <RootNamespace>CSM_Foundation_Database</RootNamespace>
+	    <PackageId>CSM.Foundation.Database</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Renato Urrea</Authors>
+		<Company>Cosmos (CSM)</Company>
+		<RepositoryUrl>https://github.com/Cosmos-CSM/csm_foundation_database</RepositoryUrl>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CSM.Foundation.Core" Version="1.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
+    <PackageReference Include="CSM.Foundation.Core" Version="1.2.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
+    <PackageReference Include="xunit" Version="2.9.3" />
   </ItemGroup>
 
 </Project>

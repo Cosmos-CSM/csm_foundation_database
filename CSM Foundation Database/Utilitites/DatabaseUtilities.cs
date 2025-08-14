@@ -118,7 +118,7 @@ public class DatabaseUtilities {
                 .FirstOrDefault()?
                 .MakeGenericMethod(entityType)
                 .Invoke(database, null)
-                ?? throw new XSystem($"DbContext({database.GetType().Name}) doesn´t have the neccesary DbSet({entityType.Name}) method", null);
+                ?? throw new ($"DbContext({database.GetType().Name}) doesn´t have the neccesary DbSet({entityType.Name}) method", null);
 
             return (IQueryable<IEntity>)objectDbSet;
         }

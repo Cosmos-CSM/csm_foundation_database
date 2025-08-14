@@ -1,5 +1,6 @@
-﻿using CSM_Foundation.Core.Extensions;
-using CSM_Foundation.Database;
+﻿using CSM_Foundation.Database;
+
+using CSM_Foundation_Core.Extensions;
 
 using CSM_Foundation_Database.Utilitites;
 
@@ -36,7 +37,7 @@ public abstract class BQ_Database<TDatabase>
     ///     Custom identifier for multiple database testing solutions.
     /// </param>
     public BQ_Database(string Sign = "DB") {
-        
+
         Database = DatabaseUtilities.Q_Construct<TDatabase>(Sign);
     }
 

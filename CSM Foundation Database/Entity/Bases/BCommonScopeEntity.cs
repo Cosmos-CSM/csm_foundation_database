@@ -2,6 +2,8 @@
 
 using CSM_Foundation.Database;
 
+using CSM_Foundation_Database.Extensions;
+
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace CSM_Foundation_Database.Entity.Bases;

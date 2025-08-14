@@ -2,6 +2,7 @@
 using System.Reflection;
 
 using CSM_Foundation_Core;
+using CSM_Foundation_Core.Utils;
 
 using CSM_Foundation_Database.Entity.Bases;
 using CSM_Foundation_Database.Models;
@@ -177,7 +178,7 @@ public abstract partial class BDatabase<TDatabases>
 
 
     public void ValidateHealth() {
-        Logger.Announce(
+        ConsoleUtils.Announce(
             $"Setting up ORM",
             new() {
                 { "Database", GetType()?.Namespace ?? "---" },
@@ -186,7 +187,7 @@ public abstract partial class BDatabase<TDatabases>
         );
 
         if (Database.CanConnect()) {
-            Logger.Success($"[{GetType().FullName}] ORM Set");
+            ConsoleUtils.Success($"[{GetType().FullName}] ORM Set");
 
             IEnumerable<string> pendingMigrations = Database.GetPendingMigrations();
             if (pendingMigrations.Any()) {
@@ -208,7 +209,7 @@ public abstract partial class BDatabase<TDatabases>
     public void Evaluate() {
         BEntity[] sets = ValidateSets();
 
-        Logger.Announce(
+        ConsoleUtils.Announce(
             $"[{GetType().Name}] Validatig Sets...",
             new() {
                 { "Count", sets.Length }
@@ -219,7 +220,7 @@ public abstract partial class BDatabase<TDatabases>
         foreach (BEntity set in sets) {
             Exception[] result = set.EvaluateDefinition();
             if (result.Length > 0) {
-                Logger.Warning(
+                ConsoleUtils.Warning(
                     "Wrong [Set] definition",
                     new() {
                         { "Set", set.GetType().Name },
@@ -234,7 +235,7 @@ public abstract partial class BDatabase<TDatabases>
         if (evResults.Length > 0) {
             throw new Exception("Database [Set] definition failures");
         } else {
-            Logger.Success($"[{GetType().Name}] Set validation succeeded");
+            ConsoleUtils.Success($"[{GetType().Name}] Set validation succeeded");
         }
     }
 
@@ -257,11 +258,15 @@ public abstract partial class BDatabase<TDatabases>
         string connectionString = Connection.GenerateConnectionString();
         optionsBuilder.UseSqlServer(connectionString);
 
+        /// We catch when the execution context is an Entity Framework design runtime.
         if (AppDomain.CurrentDomain.FriendlyName.Contains("ef")) {
-            Logger.Warning(
+
+            string envValue = SystemUtils.GetVar("ASPNETCORE_ENVIRONMENT") ?? SystemUtils.GetVar("DOTNET_ENVIRONMENT") ?? "---";
+
+            ConsoleUtils.Warning(
                     $"Running EF Design Time Execution",
                     new Dictionary<string, object?> {
-                        { "Environment", ServerUtils.Environment.ToString() },
+                        { "Environment", envValue },
                         { "Connection", connectionString },
                     }
                 );

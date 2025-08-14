@@ -1,0 +1,48 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  package_publish:
+    runs-on: ubuntu-latest
+    
+    env:
+      CS_PROJECT_PATH: 'CSM Foundation Database/CSM Foundation Database.csproj'
+
+    steps:
+      - name: 🔄 Checkout repo
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 🔧 Restore & Build
+        run: |
+          dotnet restore "$CS_PROJECT_PATH"
+          dotnet build   "$CS_PROJECT_PATH" \
+            --configuration Release
+
+      - name: 📦 Pack NuGet project
+        run: |
+          dotnet pack "$CS_PROJECT_PATH" \
+            --configuration Release \
+            --output ./nupkgs
+
+      - name: 📤 Push to GitHub Packages
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.PUBLISH_PAT }}
+        run: |
+          dotnet nuget push "./nupkgs/*.nupkg" \
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --api-key $NUGET_AUTH_TOKEN \
+            --skip-duplicate

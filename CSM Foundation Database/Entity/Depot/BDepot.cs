@@ -4,6 +4,8 @@ using System.Reflection;
 
 using CSM_Foundation.Database;
 
+using CSM_Foundation_Core;
+
 using CSM_Foundation_Database.Entity.Bases;
 using CSM_Foundation_Database.Entity.Depot.IDepot_Read;
 using CSM_Foundation_Database.Entity.Depot.IDepot_Update;
@@ -12,7 +14,6 @@ using CSM_Foundation_Database.Entity.Depot.IDepot_View.ViewFilters;
 using CSM_Foundation_Database.Entity.Models;
 using CSM_Foundation_Database.Entity.Models.Input;
 using CSM_Foundation_Database.Entity.Models.Output;
-using CSM_Foundation_Database.Quality.Disposing;
 using CSM_Foundation_Database.Utilitites;
 
 using Microsoft.EntityFrameworkCore;
@@ -40,9 +41,9 @@ public abstract class BDepot<TDatabase, TEntity>
     where TEntity : class, IEntity, new() {
 
     /// <summary>
-    /// 
+    ///     System data disposition manager.
     /// </summary>
-    protected readonly IDisposer? _disposer;
+    protected readonly CSM_Foundation_Core.IDisposer<IEntity>? _disposer;
 
     /// <summary>
     ///     Name to handle direct transactions (not-attached)
@@ -60,7 +61,7 @@ public abstract class BDepot<TDatabase, TEntity>
     /// <param name="Database">
     ///     The <typeparamref name="TDatabase"/> that stores and handles the transactions for this <see cref="TEntity"/> concept.
     /// </param>
-    public BDepot(TDatabase Database, IDisposer? Disposer) {
+    public BDepot(TDatabase Database, IDisposer<IEntity>? Disposer) {
         _db = Database;
         _disposer = Disposer;
         _dbSet = Database.Set<TEntity>();
@@ -400,7 +401,7 @@ public abstract class BDepot<TDatabase, TEntity>
                 e => e.Id == id
             )
             .FirstOrDefaultAsync()
-            ?? throw new XDepot<TEntity>(XDepotSituations.Unfound, $"{nameof(IEntity.Id)} = {id}");
+            ?? throw new XDepot<TEntity>(XDepotEvents.UNFOUND, $"{nameof(IEntity.Id)} = {id}");
 
         entity.EvaluateRead();
         return entity;
@@ -563,7 +564,7 @@ public abstract class BDepot<TDatabase, TEntity>
         /// --> When the entity is not saved yet.
         if (entity.Id == 0) {
             if (!parameters.Create) {
-                throw new XDepot<TEntity>(XDepotSituations.CreateDisabled);
+                throw new XDepot<TEntity>(XDepotEvents.CREATE_DISABLED);
             }
 
             entity = await Create(entity);
@@ -580,11 +581,11 @@ public abstract class BDepot<TDatabase, TEntity>
             .Where(obj => obj.Id == entity.Id)
             .AsNoTracking()
             .FirstOrDefaultAsync()
-            ?? throw new XDepot<TEntity>(XDepotSituations.Unfound);
+            ?? throw new XDepot<TEntity>(XDepotEvents.UNFOUND);
 
         if (original == null) {
             if (!parameters.Create)
-                throw new XDepot<TEntity>(XDepotSituations.Unfound, $"{typeof(TEntity).Name}.Id = {entity.Id}");
+                throw new XDepot<TEntity>(XDepotEvents.UNFOUND, $"{typeof(TEntity).Name}.Id = {entity.Id}");
 
             entity.Id = 0;
             entity = await Create(entity);
@@ -629,7 +630,7 @@ public abstract class BDepot<TDatabase, TEntity>
             .FirstOrDefaultAsync(
                 e => e.Id == id
             )
-            ?? throw new XDepot<TEntity>(XDepotSituations.Unfound, $"{typeof(TEntity).Name}.Id = {id}");
+            ?? throw new XDepot<TEntity>(XDepotEvents.UNFOUND, $"{typeof(TEntity).Name}.Id = {id}");
 
         _dbSet.Remove(entity);
         _db.SaveChanges();

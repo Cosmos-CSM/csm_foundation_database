@@ -1,18 +1,17 @@
-﻿using System.Collections;
-using System.Collections.ObjectModel;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 
-using CSM_Foundation.Core;
 using CSM_Foundation.Database;
-using CSM_Foundation.Server;
+
+using CSM_Foundation_Core;
+using CSM_Foundation_Core.Exceptions;
+using CSM_Foundation_Core.Utils;
 
 using CSM_Foundation_Database.Entity;
 using CSM_Foundation_Database.Models;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.VisualBasic;
 
 namespace CSM_Foundation_Database.Utilitites;
 public class DatabaseUtilities {
@@ -52,12 +51,14 @@ public class DatabaseUtilities {
     public static ConnectionOptions Retrieve(string DatabaseSign) {
         string wd = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
 
-        string prefix = ServerUtils.Environment switch {
-            ServerEnvironments.development => DevelopmentPrefix,
-            ServerEnvironments.quality => QualityPrefix,
-            ServerEnvironments.production => ProductionPrefix,
+        string prefix = SystemUtils.GetEnv() switch {
+            SystemEnvs.DEV => Constants.Environments.DEV,
+            SystemEnvs.PROD => Constants.Environments.PROD,
+            SystemEnvs.QA => Constants.Environments.QA,
+            SystemEnvs.LAB => Constants.Environments.LAB,
             _ => DevelopmentPrefix,
         };
+
         string fn = $"{prefix}.connection.json";
 
         if (wd is null) {
@@ -108,7 +109,7 @@ public class DatabaseUtilities {
     /// </exception>
     public static TEntity SanitizeEntity<TEntity>(DbContext database, TEntity entity) {
 
-        
+
         IQueryable<IEntity> GetDbSet(Type entityType) {
             object objectDbSet = typeof(DbContext)
                 .GetMethods()
@@ -118,7 +119,7 @@ public class DatabaseUtilities {
                 .FirstOrDefault()?
                 .MakeGenericMethod(entityType)
                 .Invoke(database, null)
-                ?? throw new ($"DbContext({database.GetType().Name}) doesn´t have the neccesary DbSet({entityType.Name}) method", null);
+                ?? throw new($"DbContext({database.GetType().Name}) doesn´t have the neccesary DbSet({entityType.Name}) method", null);
 
             return (IQueryable<IEntity>)objectDbSet;
         }
@@ -169,10 +170,10 @@ public class DatabaseUtilities {
                 if (entityEntry.State == EntityState.Detached) {
                     entityEntry.State = EntityState.Unchanged;
                 }
-            } else { 
+            } else {
                 /// --> At this point we already know it's a collection relation.
                 IEnumerable<IEntity> relCollection = (IEnumerable<IEntity>)relationValue;
-                if(!relCollection.Any())
+                if (!relCollection.Any())
                     continue;
 
                 IEnumerable<object> dbRelCollection = [];
@@ -188,7 +189,7 @@ public class DatabaseUtilities {
                         ?? throw new XSystem($"Couldn't find relation entity ({relEntity.GetType().Name})[{relEntity.Id}]", null); ;
 
                     EntityEntry relEntityEntry = database.Entry(dbRelEntity);
-                    if(relEntityEntry.State == EntityState.Detached) {
+                    if (relEntityEntry.State == EntityState.Detached) {
                         relEntityEntry.State = EntityState.Unchanged;
                     }
 
@@ -198,11 +199,11 @@ public class DatabaseUtilities {
                 object castedCollection = typeof(Enumerable)
                     .GetMethod("Cast")?
                     .MakeGenericMethod(relEntityType)
-                    .Invoke(null, 
-                        [ 
-                            dbRelCollection 
+                    .Invoke(null,
+                        [
+                            dbRelCollection
                         ]
-                    ) 
+                    )
                     ?? throw new XSystem($"Unable to cast IEntity to Entity type object", null);
 
                 castedCollection = typeof(Enumerable)

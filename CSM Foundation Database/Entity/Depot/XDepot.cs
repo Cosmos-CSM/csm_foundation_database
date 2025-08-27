@@ -1,55 +1,80 @@
-﻿using System.Net;
+﻿using CSM_Foundation.Database;
 
-using CSM_Foundation.Core.Bases;
-using CSM_Foundation.Core.Constants;
-using CSM_Foundation.Database;
+using CSM_Foundation_Core;
+using CSM_Foundation_Core.Exceptions;
+using CSM_Foundation_Core.Exceptions.Models;
 
 namespace CSM_Foundation_Database.Entity.Depot;
 
 /// <summary>
-///     [Exception] to notify critical errors found during [<see cref="IDepot{TEntity}"/>] operations.
+///     Represents the <see cref="XDepot{TEntity}"/> trigger events.
 /// </summary>
-public class XDepot<TEntity>
-    : BException<XDepotSituations> 
-    where TEntity : IEntity {
-
-    protected Type EntityType;
-
-    protected string? Filter;
-
-    public XDepot(XDepotSituations Situation, string? Filter = "", Exception? System = null)
-        : base($"[{typeof(TEntity).Name}] Record Error", Situation, HttpStatusCode.InternalServerError, System) {
-
-        EntityType = typeof(TEntity);
-        this.Filter = Filter;
-
-        Factors = new Dictionary<string, dynamic> {
-            { nameof(EntityType), EntityType},
-            { nameof(Filter), Filter ?? "---" },
-        };
-    }
-
-    protected override Dictionary<XDepotSituations, string> ResolveAdvise() {
-        return new Dictionary<XDepotSituations, string> {
-            { XDepotSituations.Unfound, $"Unable to find required entity from set ${typeof(TEntity).Name}" },
-            { XDepotSituations.CreateDisabled, $"{AdvisesConstants.SERVER_CONTACT_ADVISE}" }
-        };
-    }
-}
-
-
-/// <summary>
-///     [Exception] [Situations] for <see cref="XDepot"/>
-/// </summary>
-public enum XDepotSituations {
+public enum XDepotEvents {
     /// <summary>
     ///     Used when a searched <see cref="IEntity"/> wasn't found.
     /// </summary>
-    Unfound,
+    UNFOUND,
 
     /// <summary>
     ///     Usedn when at an Update operation the <see cref="IEntity"/> given has <see cref="IEntity.Id"/> 0
     ///     (wich usually means a new entity creation) but <seealso cref="UpdateInput.Create"/> is set to false.
     /// </summary>
-    CreateDisabled,
+    CREATE_DISABLED,
+}
+
+/// <summary>
+///     Represents an exception at <see cref="IDepot{TEntity}"/> operation events.
+/// </summary>
+public class XDepot<TEntity>
+    : BException<XDepotEvents>
+    where TEntity : IEntity {
+
+    /// <summary>
+    ///     Creates a new instance.
+    /// </summary>
+    /// <param name="event">
+    ///     The <see cref="XDepotEvents"/> that triggered the exception.
+    /// </param>
+    /// <param name="searchContext">
+    ///     Depot transaction search argument.
+    /// </param>
+    /// <param name="exception">
+    ///     When the trigger events includes a caught framework exception.
+    /// </param>
+    /// <param name="feedback">
+    ///     Whether the exception event has specific user feedback messages to display.
+    /// </param>
+    public XDepot(
+            XDepotEvents @event,
+            string searchContext = "",
+            Exception? exception = null,
+            ExceptionFeedback[]? feedback = null
+        )
+        : base(
+                $"[Depot]: ({@event})", @event, exception, feedback,
+                new Dictionary<string, object?> {
+                    {
+                        "Entity",
+                        typeof(TEntity).Name
+                    },
+                    {
+                        "Search",
+                        searchContext
+                    }
+                }
+            ) {
+    }
+
+    protected override Dictionary<XDepotEvents, string> BuildAdviseContext() {
+        return new Dictionary<XDepotEvents, string> {
+            {
+                XDepotEvents.UNFOUND,
+                $"({typeof(TEntity).Name}) not found"
+            },
+            {
+                XDepotEvents.CREATE_DISABLED,
+                $"{ Constants.Messages.DEFAULT_USER_ADVISE }"
+            }
+        };
+    }
 }

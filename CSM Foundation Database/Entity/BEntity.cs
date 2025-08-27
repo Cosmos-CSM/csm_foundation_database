@@ -2,10 +2,9 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-using CSM_Foundation.Convertion;
-using CSM_Foundation.Core.Bases;
+using CSM_Foundation_Core;
+using CSM_Foundation_Core.Convertion;
 
-using CSM_Foundation_Database;
 using CSM_Foundation_Database.Validations;
 
 namespace CSM_Foundation.Database;

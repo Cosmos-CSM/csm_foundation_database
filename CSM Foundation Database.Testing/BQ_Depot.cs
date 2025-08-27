@@ -10,12 +10,13 @@ using CSM_Foundation_Database.Entity.Depot.IDepot_View;
 using CSM_Foundation_Database.Entity.Depot.IDepot_View.ViewFilters;
 using CSM_Foundation_Database.Entity.Models.Input;
 using CSM_Foundation_Database.Entity.Models.Output;
-using CSM_Foundation_Database.Quality.Disposing;
 using CSM_Foundation_Database.Utilitites;
+
+using CSM_Foundation_Database_Testing.Disposing;
 
 using Xunit;
 
-namespace CSM_Foundation_Database.Quality;
+namespace CSM_Foundation_Database_Testing;
 
 /// <summary>
 ///     [Abstract] class for Quality Depots implementations. This are classes that tests the functionallity quality of a certain <see cref="BDepot{TDatabase, TEntity}"/>, providing
@@ -54,25 +55,25 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
     /// <summary>
     ///     Generates a new behavior base for <see cref="BQ_Depot{TMigrationSet, TMigrationDepot, TMigrationDatabases}"/>.
     /// </summary>
-    /// <param name="Factories">
+    /// <param name="factories">
     ///     Database factories for relations sampleEntity at external databases needed for <see cref="TEntity"/>.
     /// </param>
-    /// <param name="Sign">
+    /// <param name="sign">
     ///     Database sign for identification purposes.
     /// </param>
-    /// <param name="Database">
+    /// <param name="database">
     ///     Main Entity <see cref="TEntity"/> database handler instance. If isn't given will use a default built instance.
     /// </param>
-    public BQ_Depot(string Sign, DatabaseFactory? Database = null, params DatabaseFactory[] Factories)
+    public BQ_Depot(string sign, DatabaseFactory? database = null, params DatabaseFactory[] factories)
         : base(
             [
-                ..Factories,
-                () => Database?.Invoke() ?? DatabaseUtilities.Q_Construct<TDatabase>(Sign)
+                ..factories,
+                () => database?.Invoke() ?? DatabaseUtilities.Q_Construct<TDatabase>(sign)
             ]
         ) {
 
-        this.Database = (TDatabase)(Database?.Invoke() ?? DatabaseUtilities.Q_Construct<TDatabase>(Sign));
-        Depot = (TDepot)Activator.CreateInstance(typeof(TDepot), this.Database, null)!;
+        Database = (TDatabase)(database?.Invoke() ?? DatabaseUtilities.Q_Construct<TDatabase>(sign));
+        Depot = (TDepot)Activator.CreateInstance(typeof(TDepot), Database, null)!;
 
         PropertyInfo[] entityProperties = typeof(TEntity).GetProperties();
 
@@ -81,7 +82,7 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
 
             Type propertyType = propertyInfo.PropertyType;
 
-            if (propertyType != typeof(string) && propertyType != typeof(int) || propertyInfo.Name == nameof(IEntity.Discriminator)) {
+            if ((propertyType != typeof(string) && propertyType != typeof(int)) || propertyInfo.Name == nameof(IEntity.Discriminator)) {
                 continue;
             }
 
@@ -148,7 +149,7 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
         int low = random.Next(int.MinValue, int.MaxValue);
 
         // Combine them into a long value
-        long randomLong = (long)high << 32 | (uint)low;
+        long randomLong = ((long)high << 32) | (uint)low;
         if (!noStored) {
             return randomLong;
         }
@@ -428,7 +429,7 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
                 }
             );
 
-        Assert.Equal(XDepotSituations.CreateDisabled, depotException.Reason);
+        Assert.Equal(XDepotEvents.CREATE_DISABLED, depotException.Event);
     }
 
     [Fact(DisplayName = $"[Update Entity]: Throws Unfound exception situation")]
@@ -447,7 +448,7 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
                     );
                 }
             );
-        Assert.Equal(XDepotSituations.Unfound, depotException.Reason);
+        Assert.Equal(XDepotEvents.UNFOUND, depotException.Event);
     }
 
     [Fact(DisplayName = $"[Update Entity]: Entity gets updated correctly")]
@@ -507,7 +508,7 @@ public abstract class BQ_Depot<TEntity, TDepot, TDatabase>
                 }
             );
 
-        Assert.Equal(XDepotSituations.Unfound, depotException.Reason);
+        Assert.Equal(XDepotEvents.UNFOUND, depotException.Event);
     }
 
     [Fact(DisplayName = $"[Delete Entity]: Deletes correctly an Entity with a given Id")]

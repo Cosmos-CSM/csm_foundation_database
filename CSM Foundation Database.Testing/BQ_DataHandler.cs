@@ -1,12 +1,14 @@
-﻿using CSM_Foundation.Core.Utils;
-using CSM_Foundation.Database;
+﻿using CSM_Foundation.Database;
 
-using CSM_Foundation_Database.Quality.Disposing;
+using CSM_Foundation_Core.Utils;
+
 using CSM_Foundation_Database.Utilitites;
+
+using CSM_Foundation_Database_Testing.Disposing;
 
 using Microsoft.EntityFrameworkCore;
 
-namespace CSM_Foundation_Database.Quality;
+namespace CSM_Foundation_Database_Testing;
 
 /// <summary>
 ///     Public Delegate for [Entity] factory [Quality] purposes.

@@ -2,7 +2,7 @@
 
 using CSM_Foundation_Database.Validations;
 
-namespace CSM_Foundation_Database.Quality;
+namespace CSM_Foundation_Database_Testing;
 public record Q_EntityEvaluation<TEntity>
     where TEntity : IEntity {
 

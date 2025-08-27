@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace CSM_Foundation_Database.Quality.Disposing;
+namespace CSM_Foundation_Database_Testing.Disposing;
 
 /// <summary>
 ///     Implementation for a [Quality] purposes data [Disposition], data created to handle and simulate test/quality cases.
 /// </summary>
-public class Q_Disposer 
+public class Q_Disposer
     : BQ_Disposer {
 
     /// <summary>

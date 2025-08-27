@@ -5,7 +5,7 @@ using CSM_Foundation.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace CSM_Foundation_Database.Quality.Disposing;
+namespace CSM_Foundation_Database_Testing.Disposing;
 
 /// <summary>
 ///     Public Delegate for [database] factory [Quality] purposes.
@@ -78,7 +78,7 @@ public abstract class BQ_Disposer
 
             foreach (IEntity committedEntity in committedEntities) {
                 EntityEntry entry = database.Entry(committedEntity);
-                if(entry.GetDatabaseValues() is null) {
+                if (entry.GetDatabaseValues() is null) {
                     continue;
                 }
 

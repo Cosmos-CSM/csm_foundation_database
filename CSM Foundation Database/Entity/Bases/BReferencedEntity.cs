@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-using CSM_Foundation.Convertion;
 using CSM_Foundation.Database;
+
+using CSM_Foundation_Core.Convertion;
 
 namespace CSM_Foundation_Database.Entity.Bases;
 

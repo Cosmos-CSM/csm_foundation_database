@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Xunit;
 
-namespace CSM_Foundation_Database.Quality;
+namespace CSM_Foundation_Database_Testing;
 
 /// <summary>
 ///     Base Quality for [MigrationDatabases].

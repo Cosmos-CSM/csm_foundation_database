@@ -54,6 +54,11 @@ jobs:
             --configuration Release \
             --output ./nupkgs
 
+      - name: 📋 Verify generated packages
+        run: |
+          echo "Contents of nupkgs folder:"
+          ls -la "./"
+
       - name: 📤 Push to GitHub Packages
         env:
           NUGET_AUTH_TOKEN: ${{ secrets.PUBLISH_PAT }}

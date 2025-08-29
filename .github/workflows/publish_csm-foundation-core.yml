@@ -42,19 +42,18 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: 📦 Pack NuGet project into repo-root/nupkgs
+      - name: 📦 Pack NuGet project
         run: |
-          # GITHUB_WORKSPACE always points at /home/runner/work/<repo>/<repo>
           dotnet pack "$CS_PROJECT_PATH" \
             --configuration Release \
-            --output "$GITHUB_WORKSPACE/nupkgs"
+            --output ./nupkgs
 
       - name: 📋 Show generated packages
-        run: ls -R "$GITHUB_WORKSPACE/nupkgs"
+        run: ls -R "./nupkgs"
 
       - name: 📤 Push to GitHub Packages
         run: |
-          dotnet nuget push "$GITHUB_WORKSPACE/nupkgs/*.nupkg" \
+          dotnet nuget push "./nupkgs/*.nupkg" \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
             --api-key "${{ secrets.PUBLISH_PAT }}" \
             --skip-duplicate

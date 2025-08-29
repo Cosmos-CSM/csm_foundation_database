@@ -1,4 +1,4 @@
-name: Publish CSM Foundation Core
+name: Publish CSM Foundation Database
 
 on:
   # 1) Manual trigger in the Actions tab
@@ -15,12 +15,12 @@ permissions:
   contents: read
   packages: write
 
-env:
-  CS_PROJECT_PATH: 'CSM Foundation Database/CSM Foundation Database.csproj'
-
 jobs:
   package_publish:
     runs-on: ubuntu-latest
+
+    env:
+      CS_PROJECT_PATH: 'CSM Foundation Database/CSM Foundation Database.csproj'
 
     steps:
       - name: 🔄 Checkout repo
@@ -55,8 +55,11 @@ jobs:
             --output ./nupkgs
 
       - name: 📤 Push to GitHub Packages
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.PUBLISH_PAT }}
         run: |
           dotnet nuget push "./nupkgs/*.nupkg" \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
-            --api-key "${{ secrets.PUBLISH_PAT }}" \
+            --api-key $NUGET_AUTH_TOKEN \
             --skip-duplicate
+

@@ -1,4 +1,4 @@
-name: Publish
+name: Publish CSM Foundation Core
 
 on:
   # 1) Manual trigger in the Actions tab
@@ -42,22 +42,19 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: 🔧 Restore & Build
+      - name: 📦 Pack NuGet project into repo-root/nupkgs
         run: |
-          dotnet restore "$CS_PROJECT_PATH"
-          dotnet build   "$CS_PROJECT_PATH" --configuration Release
-
-      - name: 📦 Pack NuGet project
-        run: |
+          # GITHUB_WORKSPACE always points at /home/runner/work/<repo>/<repo>
           dotnet pack "$CS_PROJECT_PATH" \
             --configuration Release \
-            --output ./nupkgs
+            --output "$GITHUB_WORKSPACE/nupkgs"
+
+      - name: 📋 Show generated packages
+        run: ls -R "$GITHUB_WORKSPACE/nupkgs"
 
       - name: 📤 Push to GitHub Packages
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.PUBLISH_PAT }}
         run: |
-          dotnet nuget push "./nupkgs/*.nupkg" \
+          dotnet nuget push "$GITHUB_WORKSPACE/nupkgs/*.nupkg" \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
-            --api-key "$NUGET_AUTH_TOKEN" \
+            --api-key "${{ secrets.PUBLISH_PAT }}" \
             --skip-duplicate

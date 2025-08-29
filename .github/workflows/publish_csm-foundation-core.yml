@@ -42,14 +42,17 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: 🔧 Restore & Build
+        run: |
+          dotnet restore "$CS_PROJECT_PATH"
+          dotnet build   "$CS_PROJECT_PATH" \
+            --configuration Release
+
       - name: 📦 Pack NuGet project
         run: |
           dotnet pack "$CS_PROJECT_PATH" \
             --configuration Release \
             --output ./nupkgs
-
-      - name: 📋 Show generated packages
-        run: ls -R "./nupkgs"
 
       - name: 📤 Push to GitHub Packages
         run: |

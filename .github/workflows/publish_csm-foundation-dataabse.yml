@@ -50,21 +50,24 @@ jobs:
 
       - name: 📦 Pack NuGet project
         run: |
+          # ensure output folder exists at the repo root
+          mkdir -p "$GITHUB_WORKSPACE/nupkgs"
           dotnet pack "$CS_PROJECT_PATH" \
             --configuration Release \
-            --output ./nupkgs
+            --output "$GITHUB_WORKSPACE/nupkgs"
+
 
       - name: 📋 Verify generated packages
         run: |
           echo "Contents of nupkgs folder:"
-          ls -la "./"
+          ls -la "$GITHUB_WORKSPACE/nupkgs"
+
 
       - name: 📤 Push to GitHub Packages
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.PUBLISH_PAT }}
         run: |
-          dotnet nuget push "./nupkgs/*.nupkg" \
+          dotnet nuget push "$GITHUB_WORKSPACE/nupkgs/*.nupkg" \
             --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
-            --api-key $NUGET_AUTH_TOKEN \
+            --api-key "${{ secrets.PUBLISH_PAT }}" \
             --skip-duplicate
+
 

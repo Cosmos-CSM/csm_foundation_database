@@ -1,10 +1,36 @@
 # CSM Database Testing CHANGELOG
 
-## [x.x.x] - xx.xx-xxxx
+## [7.0.2] - 18.06-2026
 
-### Changes
+### Fixed
 
-- 
+- Fixed code style
+
+#### Dependencies
+
+| Package                                 | Previous Version | New Version     |
+|:----------------------------------------|:----------------:|:---------------:|
+| CSM.Foundation.Core                     | 2.1.0            | 4.0.0           |
+| xunit.v3								  | 3.2.2            | 3.2.2           |
+
+## [7.0.1] - 18.06-2026
+
+### Fixed
+
+- Fixed some [Store] method errors at [TestingStoreManager] that were missing entity sanitization logic.
+
+#### Dependencies
+
+| Package                                 | Previous Version | New Version     |
+|:----------------------------------------|:----------------:|:---------------:|
+| CSM.Foundation.Core                     | 2.1.0            | 4.0.0           |
+| xunit.v3								  | 3.2.2            | 3.2.2           |
+
+## [7.0.0] - 18.06-2026
+
+### Fixed
+
+- Exposing as virtual some missing test cases from [DepotTestsBase].
 
 #### Dependencies
 

@@ -44,7 +44,7 @@ public class DatabaseUtils {
         string connVar = string.Format(Q_CONNTION_TMPLATE, sign);
 
         string connPath = Environment.GetEnvironmentVariable(connVar)
-            ?? throw new Exception($" Testing connection options path variable not found for ({sign}) (Make sure the environment variable [{connVar}] is set at the .runsettings tests context file)");
+            ?? throw new Exception($"Testing connection options path variable not found for ({sign}) (Make sure the environment variable [{connVar}] is set at the .runsettings tests context file)");
 
         using FileStream fileReader = new(connPath, FileMode.Open, FileAccess.Read);
 
@@ -111,10 +111,24 @@ public class DatabaseUtils {
 
             string fileName = $"{sign.ToLower()}.{envPrefix}.connection.json";
             string[] appDirFiles = Directory.GetFiles(appDir);
-            string appDirConnFile = appDirFiles
-                .Where(file => file.Contains(fileName))
-                .FirstOrDefault()
-                ?? throw new FileNotFoundException($"{appDir}\\{fileName} not in app assemblies");
+            string? appDirConnFile = appDirFiles
+                .FirstOrDefault(file => file.Contains(fileName));
+
+            if(appDirConnFile is null) {
+                ConsoleUtils.Error(
+                    "Database connection options not found in app assemblies",
+                    details: new Dictionary<string, object?> {
+                        { "Environment Variable Name", envVarName },
+                        { "Environment Variable Value", envVarValue },
+                        { "Environment Variable Target", usedEnvTarget },
+                        { "Assemblies Directory", AppContext.BaseDirectory },
+                        { "Signature", sign },
+                        { "File", fileName },
+                    }
+                );
+
+                throw new FileNotFoundException($"{appDir}\\{fileName} not in app assemblies");
+            }
 
             filePath = appDirConnFile;
         }
@@ -192,47 +206,48 @@ public class DatabaseUtils {
         Type entityType = entity.GetType();
         PropertyInfo[] entityTypeProps = entityType.GetProperties();
 
-        // Getting entity dependencies / dependants to sanitize. 
-        List<PropertyInfo> entityDependantsProps = [];
-        List<PropertyInfo> entityDependenciesProps = [];
-        foreach (PropertyInfo entityTypeProperty in entityTypeProps) {
-            EntityDependencyAttribute? isDependency = entityTypeProperty.GetCustomAttribute<EntityDependencyAttribute>();
+        // Getting entity relations for sanitization.. 
+        IEnumerable<PropertyInfo> entityRelations = entityTypeProps.Where(
+                entityTypeProp => {
+                    EntityRelationAttribute? relationAttr = entityTypeProp.GetCustomAttribute<EntityRelationAttribute>();
 
-            if (isDependency != null) {
-                entityDependenciesProps.Add(entityTypeProperty);
+                    return relationAttr != null;
+                }
+            );
+
+        // Sanitizing reltions process.
+        foreach (PropertyInfo entityRelation in entityRelations) {
+            object? entityRelValue = entityRelation.GetValue(entity);
+            if (entityRelValue is null) {
                 continue;
             }
 
-            EntityDependantAttribute? isDependant = entityTypeProperty.GetCustomAttribute<EntityDependantAttribute>();
-            if (isDependant != null) {
-                entityDependantsProps.Add(entityTypeProperty);
+            Type relType = entityRelation.PropertyType;
+            bool isEntity = relType.IsAssignableTo(typeof(IEntity));
+            bool isCollectionOfEntities = false;
+
+            if (!isEntity) {
+                Type genericDefinition = relType.GetGenericTypeDefinition();
+                bool isCollection = genericDefinition.IsAssignableTo(typeof(ICollection<>));
+
+                if (isCollection) {
+                    Type elementType = relType.GetGenericArguments()[0];
+                    isCollectionOfEntities = typeof(IEntity).IsAssignableFrom(elementType);
+                }
             }
-        }
 
-
-        // Sanitizing dependencies process.
-        foreach (PropertyInfo entityDependencyProp in entityDependenciesProps) {
-            object? entityDependencyValue = entityDependencyProp.GetValue(entity);
-            if (entityDependencyValue is null) {
-                continue;
-            }
-
-            Type entityDependencyType = entityDependencyProp.PropertyType;
-            bool isEntity = entityDependencyType.IsAssignableTo(typeof(IEntity));
-            bool isCollection = entityDependencyType.IsAssignableTo(typeof(ICollection<IEntity>));
-
-            if (!isEntity && !isCollection) {
+            if (!isEntity && !isCollectionOfEntities) {
                 throw new SystemError(
-                    "Entity dependency is not IEntity / ICollection<IEntity> assignable",
-                        data: new Dictionary<string, object?> {
-                            { "EntityType", entityType.Name },
-                            { "DependencyType", entityDependencyType.Name },
-                        }
-                    );
+                    $"Entity dependency ({entityRelation.Name}[{relType.Name}]) is not IEntity / ICollection<IEntity> assignable",
+                    data: new Dictionary<string, object?> {
+                        { "EntityType", entityType },
+                        { "RelationType", relType },
+                    }
+                );
             }
 
             if (isEntity) {
-                IEntity relEntity = (IEntity)entityDependencyValue;
+                IEntity relEntity = (IEntity)entityRelValue;
 
                 if (relEntity.Id <= 0) {
                     throw new SystemError($"Dependencies aren't allowed to be created on main Entity creation", null);
@@ -246,14 +261,14 @@ public class DatabaseUtils {
                     .FirstOrDefault()
                     ?? throw new SystemError($"Couldn't find relation entity ({relEntity.GetType().Name})[{relEntity.Id}]", null);
 
-                entityDependencyProp.SetValue(entity, dbRelEntity);
+                entityRelation.SetValue(entity, dbRelEntity);
                 EntityEntry entityEntry = database.Entry(dbRelEntity);
                 if (entityEntry.State == EntityState.Detached) {
                     entityEntry.State = EntityState.Unchanged;
                 }
             } else {
                 // --> At this point we already know it's a collection relation.
-                IEnumerable<IEntity> relCollection = (IEnumerable<IEntity>)entityDependencyValue;
+                IEnumerable<IEntity> relCollection = (IEnumerable<IEntity>)entityRelValue;
                 if (!relCollection.Any())
                     continue;
 
@@ -298,68 +313,7 @@ public class DatabaseUtils {
                     )
                     ?? throw new SystemError("Unable to convert entity collection", null);
 
-                entityDependencyProp.SetValue(entity, castedCollection);
-            }
-        }
-
-        foreach (PropertyInfo dependantProp in entityDependantsProps) {
-            Type dependantPropType = dependantProp.PropertyType;
-            object? dependantValue = dependantProp.GetValue(entity);
-
-            if (dependantValue is null) {
-                continue;
-            }
-
-            if (dependantValue is not IEnumerable<IEntity> dependantEntities) {
-                throw new SystemError($"Entity dependant integrity error, a dependant always must be a collection", null);
-            }
-
-            // --> Looking into dependants to sanitize its dependency.
-            foreach (IEntity dependantEntity in dependantEntities) {
-                if (dependantEntity.Id == 0)
-                    throw new SystemError($"Dependants aren't allowed to be created on main Entity creation", null);
-
-
-                Type dependantType = dependantEntity.GetType();
-                PropertyInfo[] dependantProps = dependantType.GetProperties();
-                PropertyInfo dependencyProp = dependantProps
-                    .FirstOrDefault(
-                            dependantTypeProp => {
-                                EntityDependencyAttribute? dependencyAttr = dependantTypeProp.GetCustomAttribute<EntityDependencyAttribute>();
-                                if (dependencyAttr == null)
-                                    return false;
-
-
-                                return dependantTypeProp.PropertyType == entityType;
-                            }
-                        )
-                    ?? throw new SystemError($"Couldn't find dependency property ({entityType.Name}) in dependant entity ({dependantType.Name})", null);
-
-
-                if (!dependencyProp.PropertyType.IsAssignableTo(typeof(IEntity)))
-                    throw new SystemError($"Dependency ({dependencyProp.Name}) found at Dependant ({dependantProp.Name}) but it isn't a IEntity", null);
-
-                IQueryable<IEntity> dbSet = GetDbSet(database, dependantType);
-
-                IEntity trackedDependant = dbSet.Where(
-                        entity => entity.Id == dependantEntity.Id
-                    )
-                    .FirstOrDefault()
-                    ?? throw new SystemError($"Couldn't find dependant ({dependantEntity.Id}) [{dependantType.Name}] in database", null);
-
-
-                object? dependencyValue = dependencyProp.GetValue(trackedDependant);
-
-
-                if (dependencyValue == null) {
-                    dependencyProp.SetValue(trackedDependant, entity);
-                    continue;
-                }
-
-                IEntity dependencyEntity = (IEntity)dependencyValue;
-                if (dependencyEntity.Id != entity.Id) {
-                    dependencyProp.SetValue(trackedDependant, entity);
-                }
+                entityRelation.SetValue(entity, castedCollection);
             }
         }
 
@@ -378,6 +332,7 @@ public class DatabaseUtils {
     /// <param name="new">
     ///     New entity data to overwrite.
     /// </param>
+    [Obsolete("This method shouldn't be called since Update operations already have their own sanitizing processes. TODO: Please remove at next major")]
     public static void SanitizeUpdateEntity(DbContext database, IEntity original, IEntity @new) {
         EntityEntry previousEntry = database.Entry(original);
         if (previousEntry.State == EntityState.Unchanged) {

@@ -15,7 +15,7 @@ public class EntityDependantProxy
     public override Type Database { get; init; } = typeof(DatabaseProxy);
 
 
-    [EntityDependency]
+    [EntityRelation]
     public EntityProxy EntityProxy { get; init; } = default!;
 
     protected override void DesignEntity(EntityTypeBuilder etBuilder) {

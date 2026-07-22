@@ -27,6 +27,16 @@ public enum EntityErrorEvents {
     ///     Event when the Entity delete operation has failed.
     /// </summary>
     DELETE_FAILED,
+
+    /// <summary>
+    ///     Event when the Entity tries to update a relation that is not a collection.
+    /// </summary>
+    RELATION_NOT_COLLECTION,
+
+    /// <summary>
+    ///     Event when the Entity has configured a relation that is not a valid business entity.
+    /// </summary>
+    RELATION_NOT_ENTITY,
 }
 
 /// <summary>
@@ -57,7 +67,7 @@ public class EntityError<TEntity>
     ///     <see cref="Exception"/> caught over the operation error.
     /// </param>
     public EntityError(EntityErrorEvents @event, TEntity entity, Exception exception)
-        : base($"An entity ({entity.GetType()}) operation has failed", @event, exception) {
+        : base($"An entity ({entity.GetType().Name}) operation has failed: {@event}", @event, exception) {
 
         Entity = entity;
 

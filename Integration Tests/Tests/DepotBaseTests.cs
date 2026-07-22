@@ -22,37 +22,54 @@ public class DepotBaseTests
         };
     }
 
+    /// <summary>
+    ///     Method: <see cref="DepotBase{TDatabase, TEntity}.Update(QueryInput{TEntity, UpdateInput{TEntity}})"/> 
+    ///     Expectation: Success updating.
+    /// </summary>
     public override async Task Update_Single_Success() {
         //Expectation
-        EntityDependencyProxy dependency = Store(
+        EntityProxy testEntity = await Store(
+               new EntityProxy {
+
+               }
+           );
+
+        EntityDependencyProxy dependency = await Store(
                 new EntityDependencyProxy()
             );
 
-        EntityDependantProxy dependant = Store(
+        EntityDependantProxy dependant = await Store(
                 new EntityDependantProxy()
             );
 
-        EntityProxy testEntity = Store(
-                new EntityProxy()
+        await Store(
+                new EntityDependantProxy {
+                    EntityProxy = testEntity
+                }
             );
 
         testEntity.EntityDependencyProxy = dependency;
-        testEntity.EntityDependantProxies.Add(dependant);
+
         UpdateOutput<EntityProxy> updateOutput = await _depot.Update(
                 new QueryInput<EntityProxy, UpdateInput<EntityProxy>> {
                     Parameters = new UpdateInput<EntityProxy> {
                         Entity = testEntity,
-                        Create = true,
-                        Relations = {
+                        Relations = new Dictionary<string, IDictionary<string, RelationUpdate[]>> {
                             {
                                 nameof(EntityProxy.EntityDependantProxies),
-                                [
-                                        new RelationUpdate {
-                                                Action = RelationUpdateAction.ADD,
-                                                Entity = dependant
-                                            },
-                                    ]
-                            }
+                                new Dictionary<string, RelationUpdate[]> {
+                                    {
+                                        string.Empty,
+                                        new RelationUpdate[] {
+                                            new() {
+                                                Entity = dependant,
+                                                Action = RelationUpdateAction.ADD
+                                            }
+                                        }
+                                    }
+                                }
+
+                            },
                         },
                     },
                     PostProcessor = (query) => {
@@ -61,17 +78,22 @@ public class DepotBaseTests
                 }
             );
 
-        Assert.NotNull(updateOutput.Original);
-        Assert.Empty(updateOutput.Original.EntityDependantProxies);
-        Assert.NotEmpty(updateOutput.Updated.EntityDependantProxies);
-        
+        EntityProxy? ogEntity = updateOutput.Original;
+        EntityProxy updatedEntity = updateOutput.Updated;
+
+
+        Assert.NotNull(ogEntity);
+        Assert.Single(ogEntity.EntityDependantProxies);
+
+        Assert.NotEmpty(updatedEntity.EntityDependantProxies);
+
         Assert.Contains(
-                updateOutput.Updated.EntityDependantProxies,
+                updatedEntity.EntityDependantProxies,
                 (dependantEntry) => dependantEntry.Id == dependant.Id
             );
         Assert.Equal(
                 dependency.Id,
-                updateOutput.Updated.EntityDependencyProxy.Id
+                updatedEntity.EntityDependencyProxy.Id
             );
     }
 }

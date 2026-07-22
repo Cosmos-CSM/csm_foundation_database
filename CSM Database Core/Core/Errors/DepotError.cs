@@ -1,4 +1,5 @@
 ﻿using CSM_Database_Core.Depots.Abstractions.Interfaces;
+using CSM_Database_Core.Depots.Models;
 using CSM_Database_Core.Entities.Abstractions.Interfaces;
 
 using CSM_Foundation_Core;
@@ -17,10 +18,22 @@ public enum DepotErrorEvents {
     UNFOUND,
 
     /// <summary>
-    ///     Usedn when at an Update operation the <see cref="IEntity"/> given has <see cref="IEntity.Id"/> 0
-    ///     (wich usually means a new entity creation) but <seealso cref="Depots.Models.UpdateInput{TEntity}.Create"/> is set to false.
+    ///     Used when at an Update operation the <see cref="IEntity"/> given has <see cref="IEntity.Id"/> 0
+    ///     (wich usually means a new entity creation) but <seealso cref="UpdateInput{TEntity}.Create"/> is set to false.
     /// </summary>
     CREATE_DISABLED,
+
+    /// <summary>
+    ///     Event when at an <see cref="IDepotUpdate{TEntity}.Update(QueryInput{TEntity, UpdateInput{TEntity}})"/> operation, target entity relation 
+    ///     references mismatches found references.
+    /// </summary>
+    RELATIONS_UPDATE_MISMATCH_TARGET_REFS,
+
+    /// <summary>
+    ///     Event when at an <see cref="IDepotUpdate{TEntity}.Update(QueryInput{TEntity, UpdateInput{TEntity}})"/> operation, a relation 
+    ///     updates is configured for multi target relation references with one of them as the default (string.Empty) reference configuration.
+    /// </summary>
+    RELATIONS_UPDATE_TARGETMULTIREFERENCE_CANNOTHAVEDEFAULT,
 }
 
 /// <summary>

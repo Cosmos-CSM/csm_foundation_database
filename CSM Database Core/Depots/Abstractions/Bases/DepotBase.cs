@@ -274,9 +274,15 @@ public abstract class DepotBase<TDatabase, TEntity>
         TEntity? originalEntity = null;
         IQueryable<TEntity> query = _dbSet;
 
-        originalEntity = await query
-            .Where(obj => obj.Id == updateEntity.Id)
-            .AsNoTracking()
+        IQueryable<TEntity> ogEntityQuery = query
+            .AsNoTrackingWithIdentityResolution()
+            .Where(obj => obj.Id == updateEntity.Id);
+
+        if (input.PostProcessor != null) {
+            ogEntityQuery = input.PostProcessor(ogEntityQuery);
+        }
+
+        originalEntity = await ogEntityQuery
             .FirstOrDefaultAsync();
 
         // --> When the update entity comes with ID, but there was no enitty stored with that ID, we check if creation is valid.
@@ -304,44 +310,158 @@ public abstract class DepotBase<TDatabase, TEntity>
         _db.Entry(trackedEntity).CurrentValues.SetValues(updateEntity);
         EntityBase trackedEntityBase = (trackedEntity as EntityBase)!;
 
-        // Updating relations instructions.
-        Dictionary<string, RelationUpdate[]> relationsUpdates = updateInput.Relations;
+        // Updating relations instructions (used for collection relation in source entity).
+        // Here we consider "Source Entity" as the initial entity intended to be updated. 
+        IDictionary<string, IDictionary<string, RelationUpdate[]>> relationsUpdates = updateInput.Relations;
         if (!relationsUpdates.IsNullOrEmpty()) {
+            foreach (KeyValuePair<string, IDictionary<string, RelationUpdate[]>> relationUpdates in relationsUpdates) {
+                string srcRelName = relationUpdates.Key;
+                IDictionary<string, RelationUpdate[]> srcRelUpdates = relationUpdates.Value;
 
-            foreach (KeyValuePair<string, RelationUpdate[]> relationUpdates in relationsUpdates) {
-                string relationName = relationUpdates.Key;
-                RelationUpdate[] updates = relationUpdates.Value;
-
-                PropertyInfo relationPropertyInfo = trackedEntityBase.GetProperty(relationName);
-                IEnumerable relationCollection = (IEnumerable)relationPropertyInfo.GetValue(trackedEntity)!;
-                IEnumerable<IEntity> castedCollection = relationCollection.Cast<IEntity>();
-
-                MethodInfo addMethod = relationCollection.GetType().GetMethod("Add")!;
-
-                dynamic dynamicCollection = relationCollection;
-
-                foreach (RelationUpdate update in updates) {
-                    object? collectionItem = castedCollection.FirstOrDefault(
-                            relationItem => relationItem.Id == update.Entity.Id
+                PropertyInfo srcRelProp = trackedEntityBase.GetProperty(srcRelName);
+                
+                // Validating source entity relation property is a valid collection.
+                if(!srcRelProp.PropertyType.IsAssignableTo(typeof(IEnumerable))) 
+                    throw new EntityError<TEntity>(
+                            EntityErrorEvents.RELATION_NOT_COLLECTION, 
+                            updateEntity, 
+                            new InvalidCastException($"Cannot cast relation ({srcRelName}) into [IEnumerable] object")
                         );
 
-                    switch (update.Action) {
-                        case RelationUpdateAction.ADD:
-                            if (collectionItem is not null)
-                                continue;
+                IEnumerable srcRelColl = (IEnumerable)srcRelProp.GetValue(trackedEntity)!;
+                IEnumerable<IEntity> srcRelCastColl = srcRelColl.Cast<IEntity>();
 
-                            _db.Attach(update.Entity);
-                            addMethod.Invoke(relationCollection, [update.Entity]);
-                            break;
-                        case RelationUpdateAction.REMOVE:
-                            if (collectionItem is null)
-                                continue;
+                Type srcRelType = srcRelCastColl.GetType();
 
-                            dynamicCollection.Remove(collectionItem);
-                            break;
-                        default:
-                            throw new NotImplementedException($"Relation Update action ({update.Action}) not implemented.");
+                MethodInfo addMethod = srcRelType.GetMethod("Add")!;
+                dynamic dynamicColl = srcRelColl;
+
+                Type srcRelEntityType = srcRelType
+                    .GetInterfaces()
+                    .FirstOrDefault(
+                        tarRelCollTypeInterface =>
+                            tarRelCollTypeInterface.IsGenericType
+                            && tarRelCollTypeInterface.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                    )
+                    !.GetGenericArguments()[0];
+
+                //Now we iterate along target relation entity references to the source entity,
+                //This 'cause on some business entities might have more than one relation of the same Entity Type with different names.
+                //By default the key is string.Empty.
+                if(
+                    srcRelUpdates.Count > 1
+                    && srcRelUpdates.Any(
+                            sourceRelUpdate => string.IsNullOrWhiteSpace(sourceRelUpdate.Key)
+                        )
+                ) {
+                    throw new DepotError<TEntity>(DepotErrorEvents.RELATIONS_UPDATE_TARGETMULTIREFERENCE_CANNOTHAVEDEFAULT);
+                }
+
+                Type srcEntityType = updateEntity.GetType();
+
+                // --> We need to know if the Relation target is single (One To Many) or a collection (Many To Many).
+                PropertyInfo[] tarRelSrcProps = srcRelEntityType.GetProperties(srcEntityType);
+                foreach (KeyValuePair<string, RelationUpdate[]> targetUpdate in srcRelUpdates) {
+                    string tarRelName = targetUpdate.Key;
+                    RelationUpdate[] tarRelUpdates = targetUpdate.Value;
+                    
+                    PropertyInfo? tarEntityRelRef;
+                    if(
+                        string.IsNullOrWhiteSpace(tarRelName)
+                    ) {
+                        tarEntityRelRef = tarRelSrcProps[0];
+                        if(tarRelSrcProps.Length != 1)
+                            throw new DepotError<TEntity>(
+                                    DepotErrorEvents.RELATIONS_UPDATE_MISMATCH_TARGET_REFS, 
+                                    exception: new InvalidOperationException($"Relations update were expecting 1 reference but got ({tarRelSrcProps}) at target entity type")
+                                );
+                    } else {
+                        tarEntityRelRef = tarRelSrcProps.FirstOrDefault(
+                                tarRelSrcProp => tarRelSrcProp.Name == tarRelName
+                            );
                     }
+
+                    if(tarEntityRelRef is null) {
+                        throw new DepotError<TEntity>(
+                                    DepotErrorEvents.RELATIONS_UPDATE_MISMATCH_TARGET_REFS,
+                                    exception: new InvalidOperationException($"Relations update were expecting a reference ({tarRelName}) but got ({tarRelSrcProps}) references at target entity type")
+                                );
+                    }
+
+                    Type tarEntityRelRefType = tarEntityRelRef.PropertyType;
+                    if (tarEntityRelRefType != srcEntityType) {
+                        throw new DepotError<TEntity>(
+                                    DepotErrorEvents.RELATIONS_UPDATE_MISMATCH_TARGET_REFS,
+                                    exception: new InvalidOperationException($"Relations update were expecting a reference of type ({srcEntityType.Name}) but got of type ({tarEntityRelRef.PropertyType.Name}) at reference ({tarRelName}) of target entity type ({srcRelEntityType})")
+                                );
+                    }
+
+
+                    Action<IEntity> relationAddAction = (obj ) => { };
+                    Action<IEntity> relationRemoveAction = (obj) => { };
+
+                    if(tarEntityRelRefType.IsAssignableTo(typeof(IEntity))) {
+                        relationAddAction = (obj) => {
+                            _db.Attach(obj);
+                            tarEntityRelRef.SetValue(obj, trackedEntity);
+                        };
+
+                        relationRemoveAction = (obj) => {
+                            object? currValue = tarEntityRelRef.GetValue(obj); 
+                            if(currValue is null)
+                                return;
+
+                            IEntity currValueEntity = (IEntity)currValue;
+                            if(currValueEntity.Id != trackedEntity.Id)
+                                return;
+
+                            tarEntityRelRef.SetValue(obj, null);
+                        };
+                    } 
+ 
+                    if(tarEntityRelRefType.IsAssignableTo(typeof(IEnumerable))) {
+                        relationAddAction = (obj) => {
+                            object? collectionItem = srcRelCastColl.FirstOrDefault(
+                                relationItem => relationItem.Id == obj.Id
+                            );
+
+                            if (collectionItem is not null)
+                                return;
+
+                            _db.Attach(obj);
+                            addMethod.Invoke(
+                                srcRelCastColl, 
+                                [
+                                        obj
+                                    ]
+                            );
+                        };
+
+                        relationRemoveAction = (obj) => {
+                            object? collectionItem = srcRelCastColl.FirstOrDefault(
+                                relationItem => relationItem.Id == obj.Id
+                            );
+
+                            if (collectionItem is null)
+                                return;
+
+                            dynamicColl.Remove(collectionItem);
+                        };
+                    }
+
+                    foreach(RelationUpdate tarRelUpdate in tarRelUpdates) {
+
+                        switch (tarRelUpdate.Action) {
+                            case RelationUpdateAction.ADD:
+                                relationAddAction(tarRelUpdate.Entity);
+                                break;
+                            case RelationUpdateAction.REMOVE:
+                                relationRemoveAction(tarRelUpdate.Entity);
+                                break;
+                            default:
+                                throw new NotImplementedException($"Relation Update action ({tarRelUpdate.Action}) not implemented.");
+                        }
+                    } 
                 }
             }
         }
@@ -362,17 +482,32 @@ public abstract class DepotBase<TDatabase, TEntity>
                         if (attr is null)
                             return false;
 
-                        return !entityTypeProperty.PropertyType.IsAssignableTo(typeof(ICollection<>));
+                        Type relType = entityTypeProperty.PropertyType;
+                        bool isSingleRelation = relType.IsAssignableTo(typeof(IEntity));
+
+                        return isSingleRelation;
                     }
                 );
 
         // Updating no collection relations.
         foreach (PropertyInfo flatRelation in flatRelations) {
-
             object? updatedValue = flatRelation.GetValue(updateEntity);
             object? currentValue = flatRelation.GetValue(trackedEntity);
 
-            if (updatedValue != currentValue) {
+            if (
+                (
+                    updatedValue is IEntity updatedValueEntity
+                    && currentValue is IEntity currentValueEntity
+                    && updatedValueEntity.Id != currentValueEntity.Id
+                )
+                || (
+                    (
+                        updatedValue is not IEntity
+                        || currentValue is not IEntity
+                    )
+                    && updatedValue != currentValue
+                )
+            ) {
                 flatRelation.SetValue(trackedEntity, updatedValue);
             }
         }

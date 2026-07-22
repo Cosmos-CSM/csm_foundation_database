@@ -66,11 +66,12 @@ public class TestingStoreManager
     /// <returns>
     ///     Stored <paramref name="entity"/>.
     /// </returns>
-    public TEntity2 Store<TEntity2>(TEntity2 entity)
+    public async Task<TEntity2> Store<TEntity2>(TEntity2 entity)
         where TEntity2 : class, IEntity {
 
         DbContext db = GetDatabase(entity.Database);
 
+        entity = await DatabaseUtils.SanitizeEntity(db, entity);
         db.Set<TEntity2>().Add(entity);
         db.SaveChanges();
 
@@ -123,11 +124,11 @@ public class TestingStoreManager
     /// <returns>
     ///     Stored <paramref name="entityFactory"/> built <typeparamref name="TEntity2"/>.
     /// </returns>
-    public TEntity2 Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
+    public async Task<TEntity2> Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
         where TEntity2 : class, IEntity {
 
         TEntity2 toStore = RunEntityFactory(entityFactory);
-        toStore = Store(toStore);
+        toStore = await Store(toStore);
 
         return toStore;
     }

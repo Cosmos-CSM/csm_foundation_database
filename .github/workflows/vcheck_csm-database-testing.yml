@@ -11,7 +11,7 @@ on:
 jobs:
   check-version:
     runs-on: ubuntu-latest
-    if: github.base_ref == 'main' && github.head_ref == 'dev'
+    if: github.base_ref == 'main'
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v3

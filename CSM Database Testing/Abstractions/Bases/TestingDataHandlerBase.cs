@@ -58,14 +58,14 @@ public class TestingDataHandlerBase
     }
 
     /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(TEntity2)"/>
-    public TEntity2 Store<TEntity2>(TEntity2 entity)
+    public Task<TEntity2> Store<TEntity2>(TEntity2 entity)
         where TEntity2 : class, IEntity {
 
         return _storeManager.Store(entity);
     }
 
     /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(EntityFactory{TEntity2})"/>
-    protected TEntity2 Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
+    protected Task<TEntity2> Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
         where TEntity2 : class, IEntity {
 
         return _storeManager.Store(entityFactory);

@@ -14,11 +14,11 @@ public class EntityProxy
 
     public override Type Database { get; init; } = typeof(DatabaseProxy);
 
-    [EntityDependency]
+    [EntityRelation]
     public EntityDependencyProxy EntityDependencyProxy { get; set; } = default!;
 
 
-    [EntityDependant]
+    [EntityRelation]
     public ICollection<EntityDependantProxy> EntityDependantProxies { get; set; } = [];
 
 
@@ -27,7 +27,8 @@ public class EntityProxy
         etBuilder.Link<EntityProxy, EntityDependencyProxy>(
                 nameof(EntityDependencyProxy),
                 targetRef: nameof(EntityDependencyProxy.EntityProxies),
-                isAutoLoaded: true
+                isAutoLoaded: true,
+                deleteBehavior: Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade
             );
     }
 }

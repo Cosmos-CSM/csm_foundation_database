@@ -24,6 +24,17 @@ public record UpdateInput<TEntity>
 
     /// <summary>
     ///     <see cref="Entity"/> relations to update.
+    /// <code>
+    ///     Key: Represents the entity relation name.
+    ///     Value:
+    ///         Key:   Represents the target relation name (used when the target entity
+    ///                relation has several relations of the same Type, if not can be let as empty).
+    ///         Value: Entity relation instructions.
+    /// </code>
     /// </summary>
-    public Dictionary<string, RelationUpdate[]> Relations { get; set; } = [];
+    /// <remarks>
+    ///     Only use this to update relations that are collections in the source <see cref="Entity"/>. Be careful since the logic won't care about
+    ///     the targt relation is dependency or dependant, it will update it anywat.
+    /// </remarks>
+    public IDictionary<string, IDictionary<string, RelationUpdate[]>> Relations { get; set; } = new Dictionary<string, IDictionary<string, RelationUpdate[]>>();
 }

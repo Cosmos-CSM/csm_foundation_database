@@ -263,35 +263,7 @@ public abstract partial class DatabaseBase<TDatabases>
                     etBuilder.HasKey(nameof(IEntity.Id));
                     etBuilder.Property<long>(nameof(IEntity.Id)).IsRequired();
 
-                    if (entity is INamedEntity) {
-                        PropertyInfo nameProperty = entity.GetProperty(nameof(INamedEntity.Name));
-                        PropertyInfo descriptionProperty = entity.GetProperty(nameof(INamedEntity.Description));
-
-                        etBuilder.HasIndex(nameProperty.Name).IsUnique();
-                        etBuilder.Property(nameProperty.Name).HasMaxLength(100).IsRequired();
-
-                        etBuilder.Property(descriptionProperty.Name).HasMaxLength(200);
-                    }
-
-                    if (entity is IReferencedEntity) {
-                        PropertyInfo referenceProperty = entity.GetProperty(nameof(IReferencedEntity.Reference));
-
-                        etBuilder.HasIndex(referenceProperty.Name)
-                            .IsUnique();
-
-                        etBuilder.Property(referenceProperty.Name)
-                            .HasMaxLength(8)
-                            .IsFixedLength()
-                            .IsRequired();
-                    }
-
-                    if (entity is IActivableEntity) {
-                        PropertyInfo isEnabledProperty = entity.GetProperty(nameof(IActivableEntity.IsEnabled));
-
-                        etBuilder.Property(isEnabledProperty.Name)
-                            .IsRequired();
-                    }
-
+                    DesignEntityInterfacing(etBuilder, entity);
                     DesignEntity(entity, etBuilder);
 
                     etBuilder.Property(nameof(IEntity.Timestamp))
@@ -304,6 +276,39 @@ public abstract partial class DatabaseBase<TDatabases>
         }
 
         base.OnModelCreating(mBuilder);
+    }
+
+    /// <summary>
+    ///     Design business interfacing for business entities with their defined properties and behavior.
+    /// </summary>
+    /// <param name="etBuilder">
+    ///     Entity model builder.
+    /// </param>
+    /// <param name="entity">
+    ///     Entity instance modeled.
+    /// </param>
+    static void DesignEntityInterfacing(EntityTypeBuilder etBuilder, EntityBase entity) {
+        if (entity is INamedEntity) {
+            PropertyInfo nameProperty = entity.GetProperty(nameof(INamedEntity.Name));
+            PropertyInfo descriptionProperty = entity.GetProperty(nameof(INamedEntity.Description));
+
+            etBuilder
+                .HasIndex(nameProperty.Name)
+                .IsUnique();
+            etBuilder
+                .Property(nameProperty.Name)
+                .HasMaxLength(100).IsRequired();
+
+            etBuilder
+                .Property(descriptionProperty.Name);
+        }
+
+        if (entity is IActivableEntity) {
+            PropertyInfo isEnabledProperty = entity.GetProperty(nameof(IActivableEntity.IsEnabled));
+
+            etBuilder.Property(isEnabledProperty.Name)
+                .IsRequired();
+        }
     }
 }
 

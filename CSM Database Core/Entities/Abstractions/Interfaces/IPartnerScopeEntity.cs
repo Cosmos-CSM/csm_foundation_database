@@ -1,6 +1,4 @@
-﻿using CSM_Database_Core.Entities.Abstractions.Bases;
-
-namespace CSM_Database_Core.Entities.Abstractions.Interfaces;
+﻿namespace CSM_Database_Core.Entities.Abstractions.Interfaces;
 /// <summary>
 ///      Represents an <see cref="IEntity"/> scope for a <see cref="IPartnerBridgeEntity"/>.
 /// </summary>

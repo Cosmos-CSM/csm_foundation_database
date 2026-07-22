@@ -13,7 +13,7 @@ namespace CSM_Database_Core.Abstractions.Bases;
 /// <typeparam name="TDatabase">
 ///     Type of the <see cref="IDatabase"/> to build.
 /// </typeparam>
-public class DatabaseDesignFactoryBase<TDatabase>
+public class DatabaseDesignerBase<TDatabase>
     : IDesignTimeDbContextFactory<TDatabase>
     where TDatabase : DbContext, IDatabase, new() {
 

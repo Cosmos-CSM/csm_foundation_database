@@ -44,7 +44,7 @@ public class DatabaseUtils {
         string connVar = string.Format(Q_CONNTION_TMPLATE, sign);
 
         string connPath = Environment.GetEnvironmentVariable(connVar)
-            ?? throw new Exception($" Testing connection options path variable not found for ({sign}) (Make sure the environment variable [{connVar}] is set at the .runsettings tests context file)");
+            ?? throw new Exception($"Testing connection options path variable not found for ({sign}) (Make sure the environment variable [{connVar}] is set at the .runsettings tests context file)");
 
         using FileStream fileReader = new(connPath, FileMode.Open, FileAccess.Read);
 
@@ -111,10 +111,24 @@ public class DatabaseUtils {
 
             string fileName = $"{sign.ToLower()}.{envPrefix}.connection.json";
             string[] appDirFiles = Directory.GetFiles(appDir);
-            string appDirConnFile = appDirFiles
-                .Where(file => file.Contains(fileName))
-                .FirstOrDefault()
-                ?? throw new FileNotFoundException($"{appDir}\\{fileName} not in app assemblies");
+            string? appDirConnFile = appDirFiles
+                .FirstOrDefault(file => file.Contains(fileName));
+
+            if(appDirConnFile is null) {
+                ConsoleUtils.Error(
+                    "Database connection options not found in app assemblies",
+                    details: new Dictionary<string, object?> {
+                        { "Environment Variable Name", envVarName },
+                        { "Environment Variable Value", envVarValue },
+                        { "Environment Variable Target", usedEnvTarget },
+                        { "Assemblies Directory", AppContext.BaseDirectory },
+                        { "Signature", sign },
+                        { "File", fileName },
+                    }
+                );
+
+                throw new FileNotFoundException($"{appDir}\\{fileName} not in app assemblies");
+            }
 
             filePath = appDirConnFile;
         }
@@ -212,7 +226,7 @@ public class DatabaseUtils {
             bool isEntity = relType.IsAssignableTo(typeof(IEntity));
             bool isCollectionOfEntities = false;
 
-            if(!isEntity) {
+            if (!isEntity) {
                 Type genericDefinition = relType.GetGenericTypeDefinition();
                 bool isCollection = genericDefinition.IsAssignableTo(typeof(ICollection<>));
 

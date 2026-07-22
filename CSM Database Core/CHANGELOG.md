@@ -1,12 +1,36 @@
 # CSM Database Core CHANGELOG
 
+## [7.0.0] - 21.07-2026
+
+### Changes
+
+- Now when database connection options weren't found on app assemblies a detailed console message is displayed on Design an Development time.
+
+### Breaks
+
+- Now [NamedEntity] have new properties definitions.
+  
+  - [Description]: Now it doesn't have length limit.
+  - [Name]: Now is unique along entities.
+
+- Renamed [DatabaseDesignFactoryBase] to [DatabaseDesignerBase] to keep shorter naming conventions with sense.
+- Removed [CatalogEntity] and [ReferencedEntity] since [NamedEntities] have enough properties to deteermine an entity efficient search and constant referencing.
+
+### Dependencies
+
+| Package                                 | Previous Version | New Version     |
+|:----------------------------------------|:----------------:|:---------------:|
+| CSM.Foundation.Core                     | 4.0.0            | 4.0.0           |
+| Microsoft.EntityFrameworkCore           | 10.0.9           | 10.0.10         |
+| Microsoft.EntityFrameworkCore.SqlServer | 10.0.9           | 10.0.10         |
+
 ## [6.1.0] - 24.06-2026
 
-### Added
+### Changes
 
 - Now relations are able to be added no matter what direction of relationship they have at update operations.
 
-#### Dependencies
+### Dependencies
 
 | Package                                 | Previous Version | New Version     |
 |:----------------------------------------|:----------------:|:---------------:|
@@ -20,7 +44,7 @@
 
 - Fixed [DepotBase] [Update] method issue for a safe entity relation update just when the Ids are different.
 
-#### Dependencies
+### Dependencies
 
 | Package                                 | Previous Version | New Version     |
 |:----------------------------------------|:----------------:|:---------------:|
@@ -34,7 +58,7 @@
 
 - Fixed [DepotBase] [Update] method issue for a safe entity relation update just when the Ids are different.
 
-#### Dependencies
+### Dependencies
 
 | Package                                 | Previous Version | New Version     |
 |:----------------------------------------|:----------------:|:---------------:|
@@ -48,7 +72,7 @@
 
 - Fixed [DepotBase] [Update] method issue that was causing not relation inclussion on original entity object.
 
-#### Dependencies
+### Dependencies
 
 | Package                                 | Previous Version | New Version     |
 |:----------------------------------------|:----------------:|:---------------:|
@@ -62,7 +86,7 @@
 
 - Fixed [DepotBase] [Update] method issue that was causing miss calculation of Flat relations upgrading.
 
-#### Dependencies
+### Dependencies
 
 | Package                                 | Previous Version | New Version     |
 |:----------------------------------------|:----------------:|:---------------:|

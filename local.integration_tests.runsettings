@@ -4,7 +4,7 @@
 		<TargetFrameworkVersion>net10.0</TargetFrameworkVersion>
 		<ResultsDirectory>TestResults</ResultsDirectory>
 		<EnvironmentVariables>
-			<Q_CSMDQ.Connection>C:\Users\Usuar\Desktop\projects\Cosmos (CSM)\csm_database\DatabaseProxy\csmdq.dev.connection.json</Q_CSMDQ.Connection>
+			<Q_CSMDQ.Connection>C:\Users\Usuar\Desktop\workspaces\Cosmos (CSM)\csm_database\DatabaseProxy\csmdq.dev.connection.json</Q_CSMDQ.Connection>
 		</EnvironmentVariables>
 	</RunConfiguration>
 </RunSettings>

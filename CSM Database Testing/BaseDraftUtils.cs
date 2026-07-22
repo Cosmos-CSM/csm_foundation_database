@@ -96,53 +96,6 @@ static public class BaseDraftUtils {
     }
 
     /// <summary>
-    ///     Drafts a <typeparamref name="TCatalogEntity"/> instance with random data.
-    /// </summary>
-    /// <typeparam name="TCatalogEntity">
-    ///     Type of the entity to draft.
-    /// </typeparam>
-    /// <param name="ref">
-    ///     Default entity values.
-    /// </param>
-    /// <returns>
-    ///     A drafted <typeparamref name="TCatalogEntity"/> instance.
-    /// </returns>
-    static public TCatalogEntity CatalogEntity<TCatalogEntity>(TCatalogEntity? @ref = default)
-        where TCatalogEntity : ICatalogEntity, new() {
-
-        @ref ??= Entity(@ref);
-        @ref = NamedEntity(@ref);
-        @ref = ReferencedEntity(@ref);
-        @ref = ActivableEntity(@ref);
-
-        return @ref;
-    }
-
-    /// <summary>
-    ///     Drafts a <typeparamref name="TReferencedEntity"/> instance with random data.
-    /// </summary>
-    /// <typeparam name="TReferencedEntity">
-    ///     Type of the entity to draft.
-    /// </typeparam>
-    /// <param name="ref">
-    ///     Default values for the entity.
-    /// </param>
-    /// <returns>
-    ///     A drafted <typeparamref name="TReferencedEntity"/> instance.
-    /// </returns>
-    static public TReferencedEntity ReferencedEntity<TReferencedEntity>(TReferencedEntity? @ref = default)
-        where TReferencedEntity : IReferencedEntity, new() {
-
-        @ref ??= Entity(@ref);
-
-        if (string.IsNullOrWhiteSpace(@ref.Reference)) {
-            @ref.Reference = Rnd[..8];
-        }
-
-        return @ref;
-    }
-
-    /// <summary>
     ///     Drafts a <typeparamref name="TNamedEntity"/> instance with random data.
     /// </summary>
     /// <typeparam name="TNamedEntity">

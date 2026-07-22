@@ -2,6 +2,19 @@
 
 ## [7.0.2] - 18.06-2026
 
+### Removed
+
+- Removed drafting for [CatalogEntity] and [ReferencedEntity] since they were removed at version [7.0.0] of [CSM Database Core].
+
+### Dependencies
+
+| Package                                 | Previous Version | New Version     |
+|:----------------------------------------|:----------------:|:---------------:|
+| CSM.Foundation.Core                     | 4.0.0            | 4.0.0           |
+| xunit.v3								  | 3.2.2            | 3.2.2           |
+
+## [7.0.2] - 18.06-2026
+
 ### Fixed
 
 - Fixed code style

@@ -19,6 +19,11 @@ public class DepotBaseTests
 
     protected override EntityProxy EntityFactory(string Entropy) {
         return new EntityProxy {
+            EntityDependencyProxy = _storeManager.Store(
+                    new EntityDependencyProxy()
+                )
+            .GetAwaiter()
+            .GetResult()
         };
     }
 

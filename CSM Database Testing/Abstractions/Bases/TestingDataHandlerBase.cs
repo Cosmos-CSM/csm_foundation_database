@@ -22,6 +22,21 @@ public delegate TEntity EntityFactory<TEntity>(string Entropy)
     where TEntity : class, IEntity;
 
 /// <summary>
+///     Public Delegate for Asynchronous [Entity] factory [Quality] purposes.
+/// </summary>
+/// <typeparam name="TEntity">
+///     Type of the [Entity] to build.
+/// </typeparam>
+/// <param name="Entropy">
+///     Random 16 length <see cref="string"/> to generate unique properties records.
+/// </param>
+/// <returns>
+///     The Entity stored in the database.
+/// </returns>
+public delegate Task<TEntity> EntityFactoryAsync<TEntity>(string Entropy)
+    where TEntity : class, IEntity;
+
+/// <summary>
 ///     [Abstract] for Quality Suits implementations that uses database data direct handling to store data for testing purposes.
 /// </summary>
 /// <remarks>
@@ -64,15 +79,15 @@ public class TestingDataHandlerBase
         return _storeManager.Store(entity);
     }
 
-    /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(EntityFactory{TEntity2})"/>
-    protected Task<TEntity2> Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
+    /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(EntityFactoryAsync{TEntity2})"/>
+    protected Task<TEntity2> Store<TEntity2>(EntityFactoryAsync<TEntity2> entityFactory)
         where TEntity2 : class, IEntity {
 
         return _storeManager.Store(entityFactory);
     }
 
-    /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(int, EntityFactory{TEntity2})"/>
-    protected async Task<TEntity2[]> Store<TEntity2>(int quantity, EntityFactory<TEntity2> entityFactory)
+    /// <inheritdoc cref="TestingStoreManager.Store{TEntity2}(int, EntityFactoryAsync{TEntity2})"/>
+    protected async Task<TEntity2[]> Store<TEntity2>(int quantity, EntityFactoryAsync<TEntity2> entityFactory)
         where TEntity2 : class, IEntity, new() {
 
         return await _storeManager.Store(quantity, entityFactory);

@@ -103,6 +103,17 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     #region Abtraction
 
     /// <summary>
+    ///     Creates a context [Entity] for asynchronous testing data creation and assertion.
+    /// </summary>
+    /// <param name="Entropy">
+    ///     Random 16 length value for unique properties.
+    /// </param>
+    /// <returns>
+    ///     A correctly built <typeparamref name="TEntity"/>.
+    /// </returns>
+    protected abstract Task<TEntity> EntityFactoryAsync(string Entropy);
+
+    /// <summary>
     ///     Creates a context [Entity] for testing data creation and assertion.
     /// </summary>
     /// <param name="Entropy">
@@ -185,6 +196,17 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     }
 
     /// <summary>
+    ///     Creates a new Asynchronous <typeparamref name="TEntity"/> instance based on the <see cref="EntityFactoryAsync(string)"/> implementation.
+    /// </summary>
+    /// <returns> A new <typeparamref name="TEntity"/> instance </returns>
+    /// <remarks>
+    ///     This <see cref="IEntity"/> instance is created but not stored in the database.
+    /// </remarks>
+    protected async Task<TEntity> SamplingAsync() {
+        return await TestingStoreManager.RunEntityFactoryAsync(EntityFactoryAsync);
+    }
+
+    /// <summary>
     ///    Creates a new collection of <typeparamref name="TEntity"/> instances based on the <see cref="EntityFactory(string)"/> implementation.
     /// </summary>
     /// <param name="Count">
@@ -210,7 +232,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Create Single]: Entity created")]
     public virtual async Task Create_Single_Success() {
-        TEntity sample = Sampling();
+        TEntity sample =  Sampling();
 
         TEntity storedEntity = await _depot.Create(sample);
         await CommitSampleEntities([storedEntity]);
@@ -260,7 +282,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Read Single]: Entity read by (Id)")]
     public virtual async Task Read_Single_ById_Success() {
-        TEntity sample = await Store(EntityFactory);
+        TEntity sample = await Store(EntityFactoryAsync);
 
         TEntity readEntity = await _depot.Read(sample.Id);
         Assert.Multiple(
@@ -282,7 +304,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Read Batch]: Entities read by (Id)")]
     public virtual async Task Read_Batch_ById_Sucess() {
-        TEntity[] samples = await Store(20, EntityFactory);
+        TEntity[] samples = await Store(20, EntityFactoryAsync);
         long[] sampleIds = [.. samples.Select(i => i.Id)];
 
         BatchOperationOutput<TEntity> readEntities = await _depot.Read(sampleIds);
@@ -313,7 +335,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Read Batch]: Entities read by (Query [First matching])")]
     public virtual async Task Read_Batch_ByQueryFirstMatch_Success() {
-        TEntity[] samples = await Store(2, EntityFactory);
+        TEntity[] samples = await Store(2, EntityFactoryAsync);
         TEntity samplePivot = samples[0];
 
         BatchOperationOutput<TEntity> readEntites = await _depot.Read(
@@ -349,7 +371,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Read Batch]: Entities read by (Query [Last matching])")]
     public virtual async Task Read_Batch_ByQueryLastMatch_Success() {
-        TEntity[] samples = await Store(2, EntityFactory);
+        TEntity[] samples = await Store(2, EntityFactoryAsync);
         TEntity samplePivot = samples[1];
 
         BatchOperationOutput<TEntity> readEntites = await _depot.Read(
@@ -385,7 +407,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = "[Read Batch]: Entities read by (Query [All matching])")]
     public virtual async Task Read_Batch_ByQueryAllMatches_Success() {
-        TEntity[] samples = await Store(2, EntityFactory);
+        TEntity[] samples = await Store(2, EntityFactoryAsync);
 
         BatchOperationOutput<TEntity> readEntites = await _depot.Read(
                 new QueryInput<TEntity, FilterQueryInput<TEntity>> {
@@ -427,7 +449,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = $"[Update Single]: Created when (Create) property enabled")]
     public virtual async Task Update_Single_OnCreateEnabled_Success() {
-        TEntity sample = TestingStoreManager.RunEntityFactory(EntityFactory);
+        TEntity sample = await TestingStoreManager.RunEntityFactoryAsync(EntityFactoryAsync);
 
         UpdateOutput<TEntity> updateOutput = await _depot.Update(
                 new QueryInput<TEntity, UpdateInput<TEntity>> {
@@ -459,7 +481,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = $"[Update Single]: Throws exception (CREATE_DISABLED).")]
     public virtual async Task Update_Single_OnCreateDisabled_ErrorCreateDisabled() {
-        TEntity sample = TestingStoreManager.RunEntityFactory(EntityFactory);
+        TEntity sample = await TestingStoreManager.RunEntityFactoryAsync(EntityFactoryAsync);
 
         DepotError<TEntity> depotException = await Assert.ThrowsAsync<DepotError<TEntity>>(
                 async () => {
@@ -482,7 +504,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = $"[Update Single]: Throws exception (UNFOUND)")]
     public virtual async Task Update_Single_ErrorUnfound() {
-        TEntity sample = TestingStoreManager.RunEntityFactory(EntityFactory);
+        TEntity sample = await TestingStoreManager.RunEntityFactoryAsync(EntityFactoryAsync);
         sample.Id = await GeneratePointer();
 
         DepotError<TEntity> depotException = await Assert.ThrowsAsync<DepotError<TEntity>>(
@@ -533,7 +555,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = $"[Delete Single]: Entity deleted by (Id)")]
     public virtual async Task Delete_Single_ById_Success() {
-        TEntity entity = await Store(EntityFactory);
+        TEntity entity = await Store(EntityFactoryAsync);
 
         await _depot.Delete(entity.Id);
         await CommitSampleEntities([]);
@@ -548,7 +570,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     /// </summary>
     [Fact(DisplayName = $"[Delete Batch]: Entities deleted by (Query)")]
     public virtual async Task Delete_Batch_ByQuery_Success() {
-        TEntity entity = (await Store(10, EntityFactory))[0];
+        TEntity entity = (await Store(10, EntityFactoryAsync))[0];
 
         BatchOperationOutput<TEntity> deleteOutput = await _depot.Delete(
                 new QueryInput<TEntity, FilterQueryInput<TEntity>>() {
@@ -589,7 +611,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     [Fact(DisplayName = "[View]: Simple view calculation")]
     public virtual async Task View_Scucess() {
         const int viewPage = 1;
-        await Store(30, EntityFactory);
+        await Store(30, EntityFactoryAsync);
 
         ViewOutput<TEntity> viewOutput = await _depot.View(
                 new QueryInput<TEntity, ViewInput<TEntity>> {
@@ -616,7 +638,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
     [Fact(DisplayName = "[View]: Specific page")]
     public virtual async Task View_OnSpecificPage_Sucess() {
         const int viewPage = 2;
-        await Store(30, EntityFactory);
+        await Store(30, EntityFactoryAsync);
 
         ViewOutput<TEntity> viewOutput = await _depot.View(
                 new QueryInput<TEntity, ViewInput<TEntity>> {
@@ -722,7 +744,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
             throw SkipException.ForSkip("This assertion is only available for entities that have an evaluable string property since CONTAINS method is currently only supported to filter string type properties.");
         }
 
-        TEntity sampleEntity = await Store(EntityFactory);
+        TEntity sampleEntity = await Store(EntityFactoryAsync);
         object? sampleValue = _evaluableProperty.GetValue(sampleEntity);
 
         ViewOutput<TEntity> qOut = await _depot.View(
@@ -761,7 +783,7 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
             throw SkipException.ForSkip("This assertion is only available for entities that have an evaluable string property since CONTAINS method is currently only supported to filter string type properties.");
         }
 
-        TEntity[] entities = await Store(2, EntityFactory);
+        TEntity[] entities = await Store(2, EntityFactoryAsync);
 
         List<object?> possibleValues = [];
         List<IViewFilter<TEntity>> filters = [];

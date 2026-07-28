@@ -1,5 +1,17 @@
 # CSM Database Core CHANGELOG
 
+## [x.x.x] - xx.xx-xxxx
+
+### Changes
+- Added synchronous and asynchronous support methods for CSM Database Testing:
+
+	- EntityFactory/EntityFactoryAsync.
+	- Sampling/SamplingAsync.
+	- RunEntityFactory/RunEntityFactoryAsync.
+
+### Breaks
+- Now the Store() Method requires the EntityFactoryAsync parameter method instead of the EntityFactory method for asynchronous operations.
+
 ## [7.0.0] - 21.07-2026
 
 ### Changes

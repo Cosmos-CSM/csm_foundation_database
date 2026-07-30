@@ -124,10 +124,10 @@ public class TestingStoreManager
     /// <returns>
     ///     Stored <paramref name="entityFactory"/> built <typeparamref name="TEntity2"/>.
     /// </returns>
-    public async Task<TEntity2> Store<TEntity2>(EntityFactoryAsync<TEntity2> entityFactory)
+    public async Task<TEntity2> Store<TEntity2>(EntityFactory<TEntity2> entityFactory)
         where TEntity2 : class, IEntity {
 
-        TEntity2 toStore = await RunEntityFactoryAsync(entityFactory);
+        TEntity2 toStore = await RunEntityFactory(entityFactory);
         toStore = await Store(toStore);
 
         return toStore;
@@ -148,7 +148,7 @@ public class TestingStoreManager
     /// <returns>
     ///     The stored and updated [Entities] stored.
     /// </returns>
-    public async Task<TEntity2[]> Store<TEntity2>(int quantity, EntityFactoryAsync<TEntity2> entityFactory)
+    public async Task<TEntity2[]> Store<TEntity2>(int quantity, EntityFactory<TEntity2> entityFactory)
         where TEntity2 : class, IEntity, new() {
 
         List<TEntity2> entities = [];
@@ -156,7 +156,7 @@ public class TestingStoreManager
         using DbContext database = GetDatabase(new TEntity2().Database);
         for (int i = 0; i < quantity; i++) {
 
-            TEntity2 entity = await RunEntityFactoryAsync(entityFactory);
+            TEntity2 entity = await RunEntityFactory(entityFactory);
             entity = await DatabaseUtils.SanitizeEntity(database, entity);
             entities.Add(entity);
         }
@@ -180,25 +180,7 @@ public class TestingStoreManager
     /// <returns>
     ///     The generated [Entity] object.
     /// </returns>
-    public static  TEntity2 RunEntityFactory<TEntity2>(EntityFactory<TEntity2> factory)
-        where TEntity2 : class, IEntity {
-
-        return factory(RandomUtils.String(16));
-    }
-
-    /// <summary>
-    ///     Internal runner for <see cref="EntityFactory{TEntity}"/> utilizations, automatically sends the [Entropy] parameter. 
-    /// </summary>
-    /// <typeparam name="TEntity2">
-    ///     Type of the [Entity] build by the <paramref name="factory"/>.
-    /// </typeparam>
-    /// <param name="factory">
-    ///     [Entity] factory function.
-    /// </param>
-    /// <returns>
-    ///     The generated [Entity] object.
-    /// </returns>
-    public static async Task<TEntity2> RunEntityFactoryAsync<TEntity2>(EntityFactoryAsync<TEntity2> factory)
+    public static async Task<TEntity2> RunEntityFactory<TEntity2>(EntityFactory<TEntity2> factory)
         where TEntity2 : class, IEntity {
 
         return await factory(RandomUtils.String(16));

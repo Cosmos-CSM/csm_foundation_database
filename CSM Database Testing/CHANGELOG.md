@@ -4,11 +4,11 @@
 
 ### Changes
 
-- Added synchronous and asynchronous support methods for CSM Database Testing:
+- The following methods were converted from sync to async in CSM Database Testing:
 
-	- EntityFactory/EntityFactoryAsync.
-	- Sampling/SamplingAsync.
-	- RunEntityFactory/RunEntityFactoryAsync.
+	- EntityFactory.
+	- Sampling.
+	- RunEntityFactory.
 
 - Added Get() method to [TestingStoreManager] for entity persistence validation.
 
@@ -16,7 +16,7 @@
 
 ### Breaks
 
-- Now the Store() Method requires the EntityFactoryAsync parameter method instead of the EntityFactory method for asynchronous operations.
+- Now the EntityFactory() method in [DepotIntegrationTestsBase] it's an asynchronous method, so it must be awaited.
 
 
 ## [7.0.2] - 18.06-2026

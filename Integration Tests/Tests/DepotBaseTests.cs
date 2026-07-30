@@ -17,17 +17,11 @@ namespace Integration_Tests.Tests;
 public class DepotBaseTests
     : DepotIntegrationTestsBase<EntityProxy, DepotProxy, DatabaseProxy.DatabaseProxy> {
 
-    protected override async Task<EntityProxy> EntityFactoryAsync(string Entropy) {
+    protected override async Task<EntityProxy> EntityFactory(string Entropy) {
         return await Task.FromResult(new EntityProxy {
 
         });
     }
-
-   protected override EntityProxy EntityFactory(string Entropy) {
-        return new EntityProxy {
-
-        };
-   }
 
     /// <summary>
     ///     Method: <see cref="DepotBase{TDatabase, TEntity}.Update(QueryInput{TEntity, UpdateInput{TEntity}})"/> 

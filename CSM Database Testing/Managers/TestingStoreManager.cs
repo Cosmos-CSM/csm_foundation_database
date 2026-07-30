@@ -221,4 +221,33 @@ public class TestingStoreManager
             ? throw new Exception($"No factory subscribed for [({databaseType.Name})]")
             : factory();
     }
+
+    /// <summary>
+    ///     Retrieves the stored <typeparamref name="TEntity2"/> instances that match the given <paramref name="entities"/>.
+    /// </summary>
+    /// <typeparam name="TEntity2">
+    ///     Type of the <see cref="IEntity"/> to retrieve.
+    /// </typeparam>
+    /// <param name="entities">
+    ///     Collection of <see cref="IEntity"/> instances to look up.
+    /// </param>
+    /// <returns>
+    ///     Array of <typeparamref name="TEntity2"/> instances whose <see cref="IEntity.Id"/> is contained in <paramref name="entities"/>.
+    ///     Only the IDs that exist in the database are included.
+    /// </returns>
+    public async Task<List<TEntity2>> Get<TEntity2>(TEntity2[] entities)
+        where TEntity2 : class, IEntity, new() {
+
+        using DbContext database = GetDatabase(new TEntity2().Database);
+
+        List<TEntity2> found = [];
+        foreach (TEntity2 entity in entities) {
+            TEntity2? foundEntity = await database.Set<TEntity2>().FindAsync(entity.Id);
+            if (foundEntity is not null) {
+                found.Add(foundEntity);
+            }
+        }
+
+        return found;
+    }
 }

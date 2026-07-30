@@ -560,8 +560,8 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
         await _depot.Delete(entity.Id);
         await CommitSampleEntities([]);
 
-        TEntity? searchedEntity = _database.Set<TEntity>().Find(entity.Id);
-        Assert.Null(searchedEntity);
+        List<TEntity> searchedEntity = await Get([entity]);
+        Assert.Empty(searchedEntity);
     }
 
     /// <summary>
@@ -581,11 +581,15 @@ public abstract class DepotIntegrationTestsBase<TEntity, TDepot, TDatabase>
             );
         await CommitSampleEntities([]);
 
+        List<TEntity> searchedEntity = await Get([entity]);
+        Assert.Empty(searchedEntity);
+
         Assert.Multiple(
                 [
                     () => Assert.False(deleteOutput.Failed),
                     () => Assert.Empty(deleteOutput.Failures),
                     () => Assert.NotEmpty(deleteOutput.Successes),
+                    () => Assert.Empty(searchedEntity),
                     () => {
                         TEntity deletedEntity = deleteOutput.Successes[0];
 

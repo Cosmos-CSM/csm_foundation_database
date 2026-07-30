@@ -1,5 +1,24 @@
 # CSM Database Testing CHANGELOG
 
+## [x.x.x] - xx.xx-xxxx
+
+### Changes
+
+- Added synchronous and asynchronous support methods for CSM Database Testing:
+
+	- EntityFactory/EntityFactoryAsync.
+	- Sampling/SamplingAsync.
+	- RunEntityFactory/RunEntityFactoryAsync.
+
+- Added Get() method to [TestingStoreManager] for entity persistence validation.
+
+- Added persistence validations for Delete tests in [DepotIntegrationTests].
+
+### Breaks
+
+- Now the Store() Method requires the EntityFactoryAsync parameter method instead of the EntityFactory method for asynchronous operations.
+
+
 ## [7.0.2] - 18.06-2026
 
 ### Removed

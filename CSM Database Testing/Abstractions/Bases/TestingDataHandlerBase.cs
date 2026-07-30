@@ -92,4 +92,11 @@ public class TestingDataHandlerBase
 
         return await _storeManager.Store(quantity, entityFactory);
     }
+
+    /// <inheritdoc cref="TestingStoreManager.Get{TEntity2}(TEntity2[])"/>
+    protected async Task<List<TEntity2>> Get<TEntity2>(TEntity2[] entities)
+        where TEntity2 : class, IEntity, new() {
+
+        return await _storeManager.Get(entities);
+    }
 }
